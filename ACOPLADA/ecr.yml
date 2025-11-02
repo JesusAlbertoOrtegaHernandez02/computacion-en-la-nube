@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "ECR ACOPLATED ENTERPRISE INVENTORY"
+
+Parameters:
+  RepositoryName:
+    Type: String
+    Default: inventory-app
+    Description: ECR Acoplado
+
+Resources:
+  ECRAcoplated:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Ref RepositoryName
+      ImageScanningConfiguration:
+        ScanOnPush: false
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Mantiene únicamente las dos últimas imágenes asociadas",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 2
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }
+
+Outputs:
+  RepositoryUri:
+    Description: REFERENCIA ECR
+    Value: !GetAtt ECRAcoplated.RepositoryUri
+  
+  RepositoryNameOutput:
+    Description: Nombre del Repositorio
+    Value: !Ref RepositoryName
+
+  RepositoryArn:
+    Description: Identificador único de Repositorio
+    Value: !GetAtt ECRAcoplated.Arn

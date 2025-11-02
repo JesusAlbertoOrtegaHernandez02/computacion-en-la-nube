@@ -1,0 +1,13 @@
+# Framework web principal
+flask==3.0.2
+flask-cors==4.0.0
+
+# SDK oficial de AWS para Python (para conectar con DynamoDB)
+boto3==1.34.6
+
+# Dependencias internas de boto3 (se instalan automáticamente)
+botocore==1.34.6
+s3transfer==0.10.0
+
+# Utilidad para logging y servidor interno de Flask
+werkzeug==3.0.1

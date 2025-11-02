@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inventario CRUD - DynamoDB</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f5f6fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 2rem;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+      color: #2c3e50;
+      font-weight: 700;
+    }
+    .card {
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .btn-primary {
+      background-color: #007bff;
+      border: none;
+    }
+    .btn-primary:hover {
+      background-color: #0069d9;
+    }
+    .btn-danger:hover {
+      background-color: #c82333;
+    }
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Inventario CRUD - DynamoDB</h1>
+
+    <!-- Formulario -->
+    <div class="card p-4 mb-4">
+      <h4 class="mb-3">Crear / Actualizar producto</h4>
+      <form id="itemForm" class="row g-3">
+        <div class="col-md-2">
+          <input type="text" id="id" class="form-control" placeholder="ID" required />
+        </div>
+        <div class="col-md-3">
+          <input type="text" id="name" class="form-control" placeholder="Nombre" required />
+        </div>
+        <div class="col-md-2">
+          <input type="number" id="price" class="form-control" placeholder="Precio" required />
+        </div>
+        <div class="col-md-2">
+          <input type="number" id="stock" class="form-control" placeholder="Stock" required />
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-primary w-100">Guardar</button>
+        </div>
+        <div class="col-md-1">
+          <button type="button" class="btn btn-secondary w-100" onclick="clearForm()">Limpiar</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Tabla -->
+    <div class="card p-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0">Productos</h4>
+        <button class="btn btn-success" onclick="fetchItems()">Recargar lista</button>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Precio</th>
+              <th>Stock</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "<API-URL>";
+
+    // Cargar todos los productos
+    async function fetchItems() {
+      try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        const table = document.getElementById("tableBody");
+        table.innerHTML = "";
+        data.forEach(item => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${item.id}</td>
+            <td>${item.name}</td>
+            <td>${item.price}</td>
+            <td>${item.stock}</td>
+            <td class="text-center">
+              <button class="btn btn-sm btn-primary me-2" onclick="editItem('${item.id}')">Editar</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteItem('${item.id}')">Eliminar</button>
+            </td>`;
+          table.appendChild(row);
+        });
+      } catch (err) {
+        console.error("Error al obtener los productos:", err);
+      }
+    }
+
+    // Cargar datos en el formulario
+    async function editItem(id) {
+      try {
+        const res = await fetch(`${API_URL}/${id}`);
+        if (!res.ok) return alert("Error al obtener producto.");
+        const item = await res.json();
+        document.getElementById("id").value = item.id;
+        document.getElementById("name").value = item.name;
+        document.getElementById("price").value = item.price;
+        document.getElementById("stock").value = item.stock;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } catch (err) {
+        console.error("Error al editar:", err);
+      }
+    }
+
+    // Eliminar producto
+    async function deleteItem(id) {
+      if (!confirm("¿Seguro que deseas eliminar este producto?")) return;
+      try {
+        await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+        fetchItems();
+      } catch (err) {
+        console.error("Error al eliminar:", err);
+      }
+    }
+
+    // Verifica si existe un ID
+    async function existsItem(id) {
+      const res = await fetch(`${API_URL}/${id}`);
+      return res.ok;
+    }
+
+    // Limpiar formulario
+    function clearForm() {
+      document.getElementById("itemForm").reset();
+    }
+
+    // Crear o actualizar producto
+    document.getElementById("itemForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const id = document.getElementById("id").value.trim();
+      const data = {
+        name: document.getElementById("name").value,
+        price: parseFloat(document.getElementById("price").value),
+        stock: parseInt(document.getElementById("stock").value)
+      };
+
+      try {
+        const method = await existsItem(id) ? "PUT" : "POST";
+        const url = method === "POST" ? API_URL : `${API_URL}/${id}`;
+
+        await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(method === "POST" ? { id, ...data } : data)
+        });
+
+        clearForm();
+        fetchItems();
+      } catch (err) {
+        console.error("Error al guardar:", err);
+      }
+    });
+
+    // Carga inicial
+    fetchItems();
+  </script>
+</body>
+</html>
