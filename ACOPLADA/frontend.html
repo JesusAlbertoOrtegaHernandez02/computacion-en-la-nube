@@ -41,7 +41,6 @@
   <div class="container">
     <h1>Inventario CRUD - DynamoDB</h1>
 
-    <!-- Formulario -->
     <div class="card p-4 mb-4">
       <h4 class="mb-3">Crear / Actualizar producto</h4>
       <form id="itemForm" class="row g-3">
@@ -66,7 +65,6 @@
       </form>
     </div>
 
-    <!-- Tabla -->
     <div class="card p-4">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="mb-0">Productos</h4>
@@ -90,12 +88,16 @@
   </div>
 
   <script>
-    const API_URL = "<API-URL>";
+    // Cambia esto con tus valores reales
+    const API_URL = "https://173rte98qk.execute-api.us-east-1.amazonaws.com/prod/items";
+    const API_KEY = "WWcbAGoLtZ6hpftd0Zo2x2QKXnO5n69q4bT2maJp";
 
-    // Cargar todos los productos
+    // Obtener todos los productos
     async function fetchItems() {
       try {
-        const res = await fetch(API_URL);
+        const res = await fetch(API_URL, {
+          headers: { "x-api-key": API_KEY }
+        });
         const data = await res.json();
         const table = document.getElementById("tableBody");
         table.innerHTML = "";
@@ -117,10 +119,12 @@
       }
     }
 
-    // Cargar datos en el formulario
+    // Obtener un producto
     async function editItem(id) {
       try {
-        const res = await fetch(`${API_URL}/${id}`);
+        const res = await fetch(`${API_URL}/${id}`, {
+          headers: { "x-api-key": API_KEY }
+        });
         if (!res.ok) return alert("Error al obtener producto.");
         const item = await res.json();
         document.getElementById("id").value = item.id;
@@ -137,20 +141,24 @@
     async function deleteItem(id) {
       if (!confirm("¿Seguro que deseas eliminar este producto?")) return;
       try {
-        await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+        await fetch(`${API_URL}/${id}`, {
+          method: "DELETE",
+          headers: { "x-api-key": API_KEY }
+        });
         fetchItems();
       } catch (err) {
         console.error("Error al eliminar:", err);
       }
     }
 
-    // Verifica si existe un ID
+    // Verificar si existe un producto
     async function existsItem(id) {
-      const res = await fetch(`${API_URL}/${id}`);
+      const res = await fetch(`${API_URL}/${id}`, {
+        headers: { "x-api-key": API_KEY }
+      });
       return res.ok;
     }
 
-    // Limpiar formulario
     function clearForm() {
       document.getElementById("itemForm").reset();
     }
@@ -171,7 +179,10 @@
 
         await fetch(url, {
           method,
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "x-api-key": API_KEY
+          },
           body: JSON.stringify(method === "POST" ? { id, ...data } : data)
         });
 
@@ -182,7 +193,6 @@
       }
     });
 
-    // Carga inicial
     fetchItems();
   </script>
 </body>
