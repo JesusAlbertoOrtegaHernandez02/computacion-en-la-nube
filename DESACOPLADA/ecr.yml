@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "ECR NO ACOPLATED ENTERPRISE INVENTORY"
+
+Parameters:
+  RepositoryName:
+    Type: String
+    Default: inventory-no-acoplated-app
+    Description: ECR Acoplado
+
+Resources:
+  ECRNoAcoplated:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Ref RepositoryName
+      ImageScanningConfiguration:
+        ScanOnPush: false
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Mantiene únicamente las dos últimas imágenes asociadas",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 10
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }
+
+Outputs:
+  RepositoryUri:
+    Description: REFERENCIA ECR
+    Value: !GetAtt ECRNoAcoplated.RepositoryUri
+  
+  RepositoryNameOutput:
+    Description: Nombre del Repositorio
+    Value: !Ref RepositoryName
+
+  RepositoryArn:
+    Description: Identificador único de Repositorio
+    Value: !GetAtt ECRNoAcoplated.Arn
