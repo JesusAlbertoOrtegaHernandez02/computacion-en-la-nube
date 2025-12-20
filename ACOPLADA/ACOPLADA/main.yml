@@ -158,8 +158,6 @@ Resources:
       HealthCheckProtocol: TCP
       HealthCheckPort: "traffic-port"
       HealthCheckIntervalSeconds: 30
-      HealthyThresholdCount: 2
-      UnhealthyThresholdCount: 3
 
   Listener:
     Type: AWS::ElasticLoadBalancingV2::Listener
@@ -421,3 +419,4 @@ Outputs:
   PrivateSubnetBId:
     Description: Subnet privada B
     Value: !Ref PrivateSubnetB
+
