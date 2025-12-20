@@ -157,7 +157,6 @@ Resources:
       VpcId: !Ref VpcId
       HealthCheckProtocol: TCP
       HealthCheckPort: "traffic-port"
-      HealthCheckIntervalSeconds: 30
 
   Listener:
     Type: AWS::ElasticLoadBalancingV2::Listener
@@ -419,4 +418,5 @@ Outputs:
   PrivateSubnetBId:
     Description: Subnet privada B
     Value: !Ref PrivateSubnetB
+
 
