@@ -17,12 +17,19 @@ Parameters:
     Default: latest
     Description: Tag de la imagen Docker a usar en ECS
 
+# Creo VPC como parámetro así hago referencia en vez de hardcodear de manera contínua
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Default: vpc-00bbaab2b5f354f79
+    Description: VPC de la cuenta
+
+
 Resources:
   ECSSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: SG para ECS Fargate
-      VpcId: vpc-08e3017d59efd8684
+      VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 8080
@@ -42,6 +49,66 @@ Resources:
     Properties:
       LogGroupName: /ecs/inventory-app
       RetentionInDays: 7
+
+  PrivateSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VpcId
+      CidrBlock: 172.31.112.0/20
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: inventory-private-a
+
+  PrivateSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VpcId
+      CidrBlock: 172.31.96.0/20
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: inventory-private-b
+  
+  NatEip:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatEip.AllocationId
+      SubnetId: subnet-076964d084e9b4444
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VpcId
+
+  PrivateRouteToNat:
+    Type: AWS::EC2::Route
+    DependsOn: NatGateway
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+
+  PrivateSubnetARouteAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnetA
+      RouteTableId: !Ref PrivateRouteTable
+
+  PrivateSubnetBRouteAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnetB
+      RouteTableId: !Ref PrivateRouteTable
+
+
 
   TaskDefinition:
     Type: AWS::ECS::TaskDefinition
@@ -76,8 +143,9 @@ Resources:
       Type: network
       Scheme: internal
       Subnets:
-        - subnet-075de69e3bb890936
-        - subnet-07567421b26427197
+      - !Ref PrivateSubnetA
+      - !Ref PrivateSubnetB
+
 
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -86,7 +154,7 @@ Resources:
       Port: 8080
       Protocol: TCP
       TargetType: ip
-      VpcId: vpc-08e3017d59efd8684
+      VpcId: !Ref VpcId
       HealthCheckProtocol: TCP
       HealthCheckPort: "traffic-port"
       HealthCheckIntervalSeconds: 30
@@ -114,10 +182,10 @@ Resources:
       TaskDefinition: !Ref TaskDefinition
       NetworkConfiguration:
         AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
+          AssignPublicIp: DISABLED
           Subnets:
-            - subnet-075de69e3bb890936
-            - subnet-07567421b26427197
+            - !Ref PrivateSubnetA
+            - !Ref PrivateSubnetB
           SecurityGroups:
             - !Ref ECSSecurityGroup
       LoadBalancers:
@@ -155,9 +223,6 @@ Resources:
       PathPart: "{id}"
       RestApiId: !Ref ApiGatewayRestApi
 
-  # ===================================
-  # MÉTODOS HTTP (CORS + API KEY)
-  # ===================================
   PostItemsMethod:
     Type: AWS::ApiGateway::Method
     Properties:
@@ -348,3 +413,11 @@ Outputs:
   ApiKeyValue:
     Description: API Key para llamadas
     Value: !Ref ApiKey
+  
+  PrivateSubnetAId:
+    Description: Subnet privada A
+    Value: !Ref PrivateSubnetA
+
+  PrivateSubnetBId:
+    Description: Subnet privada B
+    Value: !Ref PrivateSubnetB
