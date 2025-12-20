@@ -189,7 +189,7 @@ Resources:
         - TargetGroupArn: !Ref TargetGroup
           ContainerName: inventory-container
           ContainerPort: 8080
-      HealthCheckGracePeriodSeconds: 30
+      
 
   ApiGatewayVpcLink:
     Type: AWS::ApiGateway::VpcLink
@@ -418,5 +418,6 @@ Outputs:
   PrivateSubnetBId:
     Description: Subnet privada B
     Value: !Ref PrivateSubnetB
+
 
 
